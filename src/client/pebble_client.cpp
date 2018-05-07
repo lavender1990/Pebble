@@ -112,6 +112,10 @@ int32_t PebbleClient::Init() {
     ret = Message::Init();
     CHECK_RETURN(ret);
 
+	cxx::shared_ptr<RouterFactory> router_factory(new RouterFactory());
+	ret = SetRouterFactory(kROUTER_DEFAULT, router_factory);
+	CHECK_RETURN(ret);
+
     signal(SIGPIPE, SIG_IGN);
 
     return 0;

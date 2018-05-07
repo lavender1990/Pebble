@@ -102,7 +102,8 @@ typedef enum {
 
 /// @brief 路由器类型定义
 typedef enum {
-    kROUTER_TBUSPP = 0,
+	kROUTER_DEFAULT = 0,
+    kROUTER_TBUSPP = 1,
     kROUTER_BUTT
 } RouterType;
 
@@ -232,7 +233,7 @@ public:
     /// @param naming_type 名字服务类型，@see NamingType
     /// @return 非NULL 成功
     /// @return NULL 失败
-    Naming* GetNaming(NamingType naming_type = kNAMING_TBUSPP);
+    Naming* GetNaming(NamingType naming_type = kNAMING_ZOOKEEPER);
 
     /// @brief 返回一个Router对象(默认使用kNAMING_TBUSPP名字服务)，用户可使用此Router对象生成路由
     /// @param name 名字的绝对路径，使用Naming接口注册的名字 @see Naming::Register
@@ -240,7 +241,7 @@ public:
     /// @return 非NULL 成功
     /// @return NULL 失败
     /// @note 如果Router使用其他名字服务，可以重新Init
-    Router* GetRouter(const std::string& name, RouterType router_type = kROUTER_TBUSPP);
+    Router* GetRouter(const std::string& name, RouterType router_type = kROUTER_DEFAULT);
 
     /// @brief 返回内置协程调度器对象
     /// @return 非NULL 成功

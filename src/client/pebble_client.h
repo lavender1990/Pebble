@@ -58,7 +58,8 @@ typedef enum {
 
 /// @brief 路由器类型定义
 typedef enum {
-    kROUTER_TBUSPP = 0,
+	kROUTER_DEFAULT = 0,
+    kROUTER_TBUSPP = 1,
     kROUTER_BUTT
 } RouterType;
 
@@ -125,9 +126,9 @@ public:
 
     PebbleRpc* GetPebbleRpc(ProtocolType protocol_type);
 
-    Naming* GetNaming(NamingType naming_type = kNAMING_TBUSPP);
+    Naming* GetNaming(NamingType naming_type = kNAMING_ZOOKEEPER);
 
-    Router* GetRouter(const std::string& name, RouterType router_type = kROUTER_TBUSPP);
+    Router* GetRouter(const std::string& name, RouterType router_type = kROUTER_DEFAULT);
 
     Timer* GetTimer() {
         return m_timer;
