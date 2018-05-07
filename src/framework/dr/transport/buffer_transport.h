@@ -20,11 +20,13 @@
 #ifndef PEBBLE_DR_TRANSPORT_TBUFFERTRANSPORT_H
 #define PEBBLE_DR_TRANSPORT_TBUFFERTRANSPORT_H
 
-#include <cstring>
+#include <cstddef>
 #include <cstdlib>
+#include <cstring>
 #include <limits>
 #include <vector>
 #include <string>
+#include <iostream>
 #include "framework/dr/transport/virtual_transport.h"
 
 #ifdef __GNUC__
@@ -104,7 +106,7 @@ public:
      * Fast-path borrow.  A lot like the fast-path read.
      */
     const uint8_t* borrow(uint8_t* buf, uint32_t* len) {
-        if (TDB_LIKELY(static_cast<ptrdiff_t>(*len) <= rBound_ - rBase_)) {
+        if (TDB_LIKELY(static_cast<std::ptrdiff_t>(*len) <= rBound_ - rBase_)) {
             // With strict aliasing, writing to len shouldn't force us to
             // refetch rBase_ from memory.  TODO(dreiss): Verify this.
             *len = static_cast<uint32_t>(rBound_ - rBase_);
@@ -117,7 +119,7 @@ public:
      * Consume doesn't require a slow path.
      */
     void consume(uint32_t len) {
-        if (TDB_LIKELY(static_cast<ptrdiff_t>(len) <= rBound_ - rBase_)) {
+        if (TDB_LIKELY(static_cast<std::ptrdiff_t>(len) <= rBound_ - rBase_)) {
             rBase_ += len;
         } else {
             throw TTransportException(TTransportException::BAD_ARGS,

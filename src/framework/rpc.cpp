@@ -227,8 +227,8 @@ int32_t IRpc::BroadcastRequest(const std::string& name,
         return kRPC_ENCODE_FAILED;
     }
 
-    const uint8_t* msg_frag[] = { m_rpc_head_buff, buff     };
-    uint32_t msg_frag_len[]   = { head_len       , buff_len };
+    const uint8_t* msg_frag[] = { m_rpc_head_buff,    buff     };
+    uint32_t msg_frag_len[]   = { (uint32_t)head_len, buff_len };
 
     int32_t num = m_broadcastv(name, sizeof(msg_frag) / sizeof(*msg_frag), msg_frag, msg_frag_len);
 
@@ -275,8 +275,8 @@ int32_t IRpc::SendMessage(int64_t handle, const RpcHead& rpc_head,
         return kRPC_ENCODE_FAILED;
     }
 
-    const uint8_t* msg_frag[] = { m_rpc_head_buff, buff     };
-    uint32_t msg_frag_len[]   = { head_len       , buff_len };
+    const uint8_t* msg_frag[] = { m_rpc_head_buff,    buff     };
+    uint32_t msg_frag_len[]   = { (uint32_t)head_len, buff_len };
 
     // 消息原路返回，如果有消息来源，则返回到来源点，如果无消息来源，走默认发送流程
     int32_t send_ret = 0;
@@ -301,21 +301,23 @@ int32_t IRpc::OnTimeout(uint64_t session_id) {
         return kTIMER_BE_REMOVED;
     }
 
+    cxx::shared_ptr<RpcSession> session = it->second;
+
     // request timeout
-    if ((it->second)->m_rsp) {
-        (it->second)->m_rsp(kRPC_REQUEST_TIMEOUT, NULL, 0);
-        ReportTransportQuality(it->second->m_handle, kRPC_REQUEST_TIMEOUT, 0);
+    if (session->m_rsp) {
+        session->m_rsp(kRPC_REQUEST_TIMEOUT, NULL, 0);
+        ReportTransportQuality(session->m_handle, kRPC_REQUEST_TIMEOUT, 0);
     }
 
-    if (it->second->m_server_side) {
-        RequestProcComplete(it->second->m_rpc_head.m_function_name,
-            kRPC_PROCESS_TIMEOUT, TimeUtility::GetCurrentMS() - it->second->m_start_time);
+    if (session->m_server_side) {
+        RequestProcComplete(session->m_rpc_head.m_function_name,
+            kRPC_PROCESS_TIMEOUT, TimeUtility::GetCurrentMS() - session->m_start_time);
     } else {
-        ResponseProcComplete(it->second->m_rpc_head.m_function_name,
-            kRPC_REQUEST_TIMEOUT, TimeUtility::GetCurrentMS() - it->second->m_start_time);
+        ResponseProcComplete(session->m_rpc_head.m_function_name,
+            kRPC_REQUEST_TIMEOUT, TimeUtility::GetCurrentMS() - session->m_start_time);
     }
 
-    m_session_map.erase(it);
+    m_session_map.erase(session_id);
 
     return kTIMER_BE_REMOVED;
 }
@@ -377,7 +379,9 @@ int32_t IRpc::ProcessResponse(const RpcHead& rpc_head,
         return kRPC_SESSION_NOT_FOUND;
     }
 
-    m_timer->StopTimer(it->second->m_timerid);
+    cxx::shared_ptr<RpcSession> session = it->second;
+
+    m_timer->StopTimer(session->m_timerid);
 
     int ret = kRPC_SUCCESS;
     const uint8_t* real_buff = buff;
@@ -398,15 +402,15 @@ int32_t IRpc::ProcessResponse(const RpcHead& rpc_head,
         }
     }
 
-    if (it->second->m_rsp) {
-        ret = it->second->m_rsp(ret, real_buff, real_buff_len);
+    if (session->m_rsp) {
+        ret = session->m_rsp(ret, real_buff, real_buff_len);
     }
 
-    int64_t time_cost = TimeUtility::GetCurrentMS() - it->second->m_start_time;
-    ReportTransportQuality(it->second->m_handle, ret, time_cost);
-    ResponseProcComplete(it->second->m_rpc_head.m_function_name, ret, time_cost);
+    int64_t time_cost = TimeUtility::GetCurrentMS() - session->m_start_time;
+    ReportTransportQuality(session->m_handle, ret, time_cost);
+    ResponseProcComplete(session->m_rpc_head.m_function_name, ret, time_cost);
 
-    m_session_map.erase(it);
+    m_session_map.erase(rpc_head.m_session_id);
 
     return ret;
 }
