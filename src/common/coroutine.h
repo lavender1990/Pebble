@@ -151,17 +151,6 @@ int64_t coroutine_running(struct schedule *);
 /// @note 只能够在协程内调用
 int32_t coroutine_yield(struct schedule *);
 
-coroutine* get_curr_coroutine(struct schedule *);
-struct stCoEpoll_t;
-
-coroutine* co_self();
-int co_poll(stCoEpoll_t *ctx, struct pollfd fds[], nfds_t nfds, int timeout_ms);
-void co_update();
-stCoEpoll_t* co_get_epoll_ct();
-void co_enable_hook_sys();
-void co_disable_hook_sys();
-bool co_is_enable_sys_hook();
-void co_log_err(const char *fmt, ...);
 
 class CoroutineSchedule;
 class Timer;

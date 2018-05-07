@@ -5,7 +5,6 @@ cc_library(
         'base64.cpp',
         'condition_variable.cpp',
         'coroutine.cpp',
-        'coroutine_system_hook.cpp',
         'cpu.cpp',
         'dir_util.cpp',
         'error.cpp',
