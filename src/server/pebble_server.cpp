@@ -335,6 +335,10 @@ PebbleServer::~PebbleServer() {
         delete m_processor_array[i];
     }
 
+	for (std::map<int, IProcessor*>::iterator it = m_user_processor.begin(); it != m_user_processor.end(); ++it) {
+		delete it->second;
+	}
+
     delete m_rpc_event_handler;
     delete m_monitor_centor;
     delete m_task_monitor;
@@ -521,11 +525,32 @@ PipeProcessor* PebbleServer::GetPipeProcessor(ProtocolType inproc_protocol_type)
         return NULL;
     }
     processor = factory->GetProcessor(GetPebbleRpc(inproc_protocol_type));
-    if (processor != NULL) {
-        processor->SetSendFunction(Message::Send, Message::SendV);
+    if (!processor) {
+        return NULL;
     }
+	processor->SetSendFunction(Message::Send, Message::SendV);
     m_processor_array[kPEBBLE_PIPE] = processor;
     return (PipeProcessor*)(processor);
+}
+
+IProcessor* PebbleServer::GetUserProcessor(int type) {
+	std::map<int, IProcessor*>::iterator it = m_user_processor.find(type);
+	if (it != m_user_processor.end()) {
+		return it->second;
+	}
+	cxx::shared_ptr<ProcessorFactory> factory = GetProcessorFactory(type);
+    if (!factory) {
+        PLOG_ERROR("processor %d factory not installed.", type);
+        return NULL;
+    }
+    IProcessor* processor = factory->GetProcessor();
+	if (!processor) {
+		return NULL;
+	}
+
+    processor->SetSendFunction(Message::Send, Message::SendV);
+    m_user_processor[type] = processor;
+    return processor;
 }
 
 Naming* PebbleServer::GetNaming(NamingType naming_type) {
@@ -606,6 +631,13 @@ int32_t PebbleServer::Update() {
             m_processor_array[i]->Update();
         }
     }
+
+	
+	for (std::map<int, IProcessor*>::iterator it = m_user_processor.begin(); it != m_user_processor.end(); ++it) {
+		if (it->second) {
+			it->second->Update();
+		}
+	}
 
     if (m_timer) {
         num += m_timer->Update();
@@ -947,6 +979,17 @@ void PebbleServer::StatProcessorResource(Stat* stat) {
             stat->AddResourceItem(it->first, it->second);
         }
     }
+	
+	for (std::map<int, IProcessor*>::iterator pit = m_user_processor.begin(); pit != m_user_processor.end(); ++pit) {
+		if (NULL == pit->second) {
+			continue;
+		}
+		resource.clear();
+        pit->second->GetResourceUsed(&resource);
+        for (it = resource.begin(); it != resource.end(); ++it) {
+            stat->AddResourceItem(it->first, it->second);
+        }
+	}
 }
 
 SessionMgr* PebbleServer::GetSessionMgr() {

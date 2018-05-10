@@ -15,6 +15,7 @@
 #ifndef  _PEBBLE_EXTENSION_PEBBLE_SERVER_H_
 #define  _PEBBLE_EXTENSION_PEBBLE_SERVER_H_
 
+#include <map>
 #include <vector>
 
 #include "common/platform.h"
@@ -187,6 +188,12 @@ public:
     /// @return 非NULL 成功
     /// @return NULL 失败
     PipeProcessor* GetPipeProcessor(ProtocolType inproc_protocol_type);
+
+	/// @brief 返回用户自定义的Processor实例
+    /// @param type 用户扩展Processor的类型，需要提前注册 @see SetProcessorFactory
+    /// @return 非NULL 成功
+    /// @return NULL 失败
+	IProcessor* GetUserProcessor(int type);
 
     /// @brief 指定传输接入的业务处理程序
     /// @param handle 传输通道句柄
@@ -390,6 +397,7 @@ private:
     std::string m_ini_file_name;
     uint32_t    m_is_overload;
     MsgExternInfo m_last_msg_info;
+	std::map<int, IProcessor*> m_user_processor;
 };
 
 ///////////////////////////////////////////////////////////////////////////////////////
