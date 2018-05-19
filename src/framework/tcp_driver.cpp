@@ -63,8 +63,6 @@ public:
 	uint16_t		_port;
 };
 
-// TODO: reconnect
-// TODO: error proc
 struct Connection {
 protected:
 	Connection() {}
@@ -610,8 +608,8 @@ int32_t TcpDriver::Close(int64_t handle) {
 }
 
 int32_t TcpDriver::Update() {
-	ev_loop(m_loop, EVRUN_NOWAIT);
-	return 0;
+	int cnt = ev_run(m_loop, EVRUN_NOWAIT);
+	return cnt;
 }
 
 int32_t TcpDriver::ParseHead(const uint8_t* head, uint32_t head_len, uint32_t* data_len) {

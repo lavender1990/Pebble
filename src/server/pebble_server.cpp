@@ -382,8 +382,9 @@ int32_t PebbleServer::Init(AppEventHandler* event_handler) {
 	MessageCallbacks cbs;
 	using namespace cxx::placeholders;
 	cbs._on_message = cxx::bind(&PebbleServer::OnMessage, this, _1, _2, _3);
-	cbs._on_peer_closed = cxx::bind(&PebbleServer::OnClosed, this, _1, _2);
 	cbs._on_peer_connected = cxx::bind(&PebbleServer::OnPeerConnected, this, _1, _2);
+	cbs._on_peer_closed = cxx::bind(&PebbleServer::OnPeerClosed, this, _1, _2);
+	cbs._on_closed = cxx::bind(&PebbleServer::OnClosed, this, _1);
     ret = Message::Init(cbs);
     CHECK_RETURN(ret);
 
@@ -744,7 +745,11 @@ int32_t PebbleServer::OnPeerConnected(int64_t local_handle, int64_t peer_hanlde)
 	return 0;
 }
 	
-int32_t PebbleServer::OnClosed(int64_t local_handle, int64_t peer_hanlde) {
+int32_t PebbleServer::OnPeerClosed(int64_t local_handle, int64_t peer_hanlde) {
+	return 0;
+}
+
+int32_t PebbleServer::OnClosed(int64_t handle) {
 	return 0;
 }
 

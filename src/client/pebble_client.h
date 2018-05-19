@@ -159,8 +159,10 @@ private:
     int32_t OnMessage(const uint8_t* msg, uint32_t msg_len, MsgExternInfo* info);
 
 	int32_t OnPeerConnected(int64_t local_handle, int64_t peer_hanlde);
+
+	int32_t OnPeerClosed(int64_t local_handle, int64_t peer_hanlde);
 	
-	int32_t OnClosed(int64_t local_handle, int64_t peer_hanlde);
+	int32_t OnClosed(int64_t handle);
 
     void InitLog();
 
