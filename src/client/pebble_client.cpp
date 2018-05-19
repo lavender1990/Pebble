@@ -109,7 +109,12 @@ int32_t PebbleClient::Init() {
     ret = InitStat();
     CHECK_RETURN(ret);
 
-    ret = Message::Init();
+	MessageCallbacks cbs;
+	using namespace cxx::placeholders;
+	cbs._on_message = cxx::bind(&PebbleClient::OnMessage, this, _1, _2, _3);
+	cbs._on_peer_closed = cxx::bind(&PebbleClient::OnClosed, this, _1, _2);
+	cbs._on_peer_connected = cxx::bind(&PebbleClient::OnPeerConnected, this, _1, _2);
+    ret = Message::Init(cbs);
     CHECK_RETURN(ret);
 
 	cxx::shared_ptr<RouterFactory> router_factory(new RouterFactory());
@@ -123,13 +128,13 @@ int32_t PebbleClient::Init() {
 
 int64_t PebbleClient::Connect(const std::string &url) {
     int64_t handle = Message::Connect(url);
-    PLOG_IF_ERROR(handle < 0, "connect %s failed(%ld:%s)", url.c_str(), handle, Message::GetLastError());
+    PLOG_IF_ERROR(handle < 0, "connect %s failed(%ld)", url.c_str(), handle);
     return handle;
 }
 
 int32_t PebbleClient::Close(int64_t handle) {
     int32_t ret = Message::Close(handle);
-    PLOG_IF_ERROR(ret != 0, "close %ld failed(%s)", handle, Message::GetLastError());
+    PLOG_IF_ERROR(ret != 0, "close %ld failed", handle);
     return ret;
 }
 
@@ -246,12 +251,7 @@ int32_t PebbleClient::Update() {
 
     int64_t old = TimeUtility::GetCurrentMS();
 
-    for (uint32_t i = 0; i < m_options._max_msg_num_per_loop; ++i) {
-        if (ProcessMessage() <= 0) {
-            break;
-        }
-        num++;
-    }
+	num += Message::Update();
 
     for (int32_t i = 0; i < kNAMING_BUTT; ++i) {
         if (m_naming_array[i]) {
@@ -281,38 +281,23 @@ int32_t PebbleClient::Update() {
     return num;
 }
 
-int32_t PebbleClient::ProcessMessage() {
-    int64_t handle = -1;
-    int32_t event  = 0;
-    int32_t ret = Message::Poll(&handle, &event, 0);
-    if (ret != 0) {
-        return 0;
-    }
-
-    const uint8_t* msg = NULL;
-    uint32_t msg_len   = 0;
-    ret = Message::Peek(handle, &msg, &msg_len, &m_last_msg_info);
-    do {
-        if (kMESSAGE_RECV_EMPTY == ret) {
-            break;
-        }
-        if (ret != 0) {
-            PLOG_ERROR("peek failed(%d:%s)", ret, Message::GetLastError());
-            break;
-        }
-
-        cxx::unordered_map<int64_t, IProcessor*>::iterator it = m_processor_map.find(m_last_msg_info._self_handle);
-        if (m_processor_map.end() == it) {
-            Message::Pop(handle);
-            PLOG_ERROR("handle(%ld) not attach a processor remote(%ld)", m_last_msg_info._self_handle, m_last_msg_info._remote_handle);
-            break;
-        }
-
-        it->second->OnMessage(m_last_msg_info._remote_handle, msg, msg_len, &m_last_msg_info, 0);
-        Message::Pop(handle);
-    } while (0);
+int32_t PebbleClient::OnMessage(const uint8_t* msg, uint32_t msg_len, MsgExternInfo* info) {
+    cxx::unordered_map<int64_t, IProcessor*>::iterator it = m_processor_map.find(info->_self_handle);
+    if (m_processor_map.end() == it) {
+        PLOG_ERROR("handle(%ld) not attach a processor remote(%ld)", info->_self_handle, info->_remote_handle);
+    } else {
+	    it->second->OnMessage(m_last_msg_info._remote_handle, msg, msg_len, info, 0);
+	}
 
     return 1;
+}
+
+int32_t PebbleClient::OnPeerConnected(int64_t local_handle, int64_t peer_hanlde) {
+	return 0;
+}
+	
+int32_t PebbleClient::OnClosed(int64_t local_handle, int64_t peer_hanlde) {
+	return 0;
 }
 
 void PebbleClient::InitLog() {

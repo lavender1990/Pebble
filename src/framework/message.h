@@ -15,6 +15,7 @@
 #ifndef _PEBBLE_COMMON_MESSAGE_H_
 #define _PEBBLE_COMMON_MESSAGE_H_
 
+#include <map>
 #include <string>
 #include "common/error.h"
 #include "common/platform.h"
@@ -43,6 +44,9 @@ typedef enum {
     kMESSAGE_SEND_BUFF_NOT_ENOUGH   =   MESSAGE_ERROR_CODE_BASE - 17,   ///< 发送缓存区不够
     kMESSAGE_RECV_INVALID_DATA      =   MESSAGE_ERROR_CODE_BASE - 18,   ///< 收到非法消息
     kMESSAGE_UNKNOWN_CONNECTION     =   MESSAGE_ERROR_CODE_BASE - 19,   ///< 未知的连接
+    kMESSAGE_INVAILD_HANDLE         =   MESSAGE_ERROR_CODE_BASE - 20,	///< invalid handle
+    kMESSAGE_DRIVER_REGISTER_FAILED =   MESSAGE_ERROR_CODE_BASE - 23,	///< dirver already existed
+    kMESSAGE_SYSTEM_ERROR			=   MESSAGE_ERROR_CODE_BASE - 24,	///< system error
 }MessageErrorCode;
 
 class MessageErrorStringRegister {
@@ -91,16 +95,34 @@ struct MsgExternInfo {
 
     int64_t         _self_handle;       // bind或connect获得的handle
     int64_t         _remote_handle;     // 远端handle
-    // int64_t         _channel;
     int64_t         _msg_arrived_ms;    // 消息到达时间
 
     IProcessor*     _src;               // 消息源，由消息分发Processor填写，方便消息在各Processor间传递
 };
 
+struct MessageCallbacks {
+	cxx::function<int(const uint8_t* msg, uint32_t msg_len, MsgExternInfo* info)> _on_message;
+	cxx::function<int(int64_t local_handle, int64_t peer_hanlde)> _on_peer_connected;
+	cxx::function<int(int64_t local_handle, int64_t peer_hanlde)> _on_peer_closed;
+	cxx::function<int(int64_t handle)> _on_closed;
+
+	MessageCallbacks& operator = (const MessageCallbacks& rhs) {
+		_on_message 		= rhs._on_message;
+		_on_peer_connected 	= rhs._on_peer_connected;
+		_on_peer_closed 	= rhs._on_peer_closed;
+		_on_closed			= rhs._on_closed;
+		return *this;
+	}
+};
+
 /// @brief 网络驱动接口
 class MessageDriver {
 public:
+	MessageDriver();
+
     virtual ~MessageDriver() {}
+
+	virtual int32_t Init() { return 0; }
 
     virtual int64_t Bind(const std::string& url) = 0;
 
@@ -111,32 +133,37 @@ public:
     virtual int32_t SendV(int64_t handle, uint32_t msg_frag_num,
                           const uint8_t* msg_frag[], uint32_t msg_frag_len[], int32_t flag) = 0;
 
-    virtual int32_t Recv(int64_t handle, uint8_t* msg_buff, uint32_t* buff_len,
-                         MsgExternInfo* msg_info) = 0;
-
-    virtual int32_t Peek(int64_t handle, const uint8_t** msg, uint32_t* msg_len,
-                         MsgExternInfo* msg_info) = 0;
-
-    virtual int32_t Pop(int64_t handle) = 0;
-
-    virtual int32_t ReportHandleResult(int64_t handle, int32_t result, int64_t time_cost) = 0;
-
     virtual int32_t Close(int64_t handle) = 0;
 
-    virtual int32_t Poll(int64_t* handle, int32_t* event, int32_t timeout) = 0;
+    virtual int32_t Update() = 0;
 
-    virtual int32_t GetUsedSize(int64_t handle, uint32_t* remain_size, uint32_t* max_size) = 0;
+	virtual const char* Prefix() const = 0;
 
-    virtual const char* GetLastError() = 0;
+public:
+	// framework call
+	void SetCallBack(const MessageCallbacks& callbacks) { m_cbs = callbacks; }
+
+	// framework call
+	void SetHandleMask(int64_t handle_mask) { m_handle_mask = handle_mask; }
+
+protected:
+	int64_t GenHandle();
+
+	MessageCallbacks m_cbs;
+
+private:
+	int64_t m_handle_seq;
+	int64_t m_handle_mask;
 };
 
 /// @brief 基于消息的通讯接口类
 class Message {
 public:
+	static const uint32_t MAX_SENDV_DATA_NUM = 32;
     // -------------------message api begin-------------------------
 
     /// @brief 初始化
-    static int32_t Init();
+    static int32_t Init(const MessageCallbacks& cb);
 
     // TODO: url规范需要统一
     /// @brief （服务端）把一个句柄绑定到指定url
@@ -177,32 +204,6 @@ public:
     static int32_t SendV(int64_t handle, uint32_t msg_frag_num,
                          const uint8_t* msg_frag[], uint32_t msg_frag_len[], int flag = 0);
 
-    /// @brief 接收消息
-    /// @param handle 接收消息的句柄
-    /// @param msg_buff 接收消息的BUFF
-    /// @param buff_len 接收消息的BUFF长度，并返回实际的消息长度
-    /// @param remote 接收的消息来源
-    /// @return 0 发送成功
-    /// @return <0 表示失败，错误码@see MessageErrorCode
-    static int32_t Recv(int64_t handle, uint8_t* msg_buff, uint32_t* buff_len,
-                        MsgExternInfo* msg_info = NULL);
-
-    /// @brief 查看第一条消息但不取出
-    /// @param handle 接收消息的句柄
-    /// @param msg 返回的消息指针
-    /// @param msg_len 返回的消息长度
-    /// @param remote 接收的消息来源
-    /// @return 0 发送成功
-    /// @return <0 表示失败，错误码@see MessageErrorCode
-    static int32_t Peek(int64_t handle, const uint8_t* *msg, uint32_t* msg_len,
-                        MsgExternInfo* msg_info = NULL);
-
-    /// @brief 将第一条消息取出
-    /// @param handle 取出的消息句柄
-    /// @return 0 发送成功
-    /// @return <0 表示失败，错误码@see MessageErrorCode
-    static int32_t Pop(int64_t handle);
-
     /// @brief 关闭句柄
     /// @param handle 由Bind或Connect或Recv返回的句柄
     /// @return 0 表示成功
@@ -215,39 +216,24 @@ public:
     /// @param timeout poll等待的最大时间，单位ms
     /// @return 0 等到事件
     /// @return -1 等待超时
-    static int32_t Poll(int64_t* handle, int32_t* event, int32_t timeout);
-
-    /// @brief 上报网络质量
-    /// @param handle 句柄
-    /// @param result 上报返回值
-    /// @param time_cost 上报时间消耗
-    /// @return 0 成功
-    /// @return <0 表示失败，错误码@see MessageErrorCode
-    static int32_t ReportHandleResult(int64_t handle, int32_t result, int64_t time_cost);
-
-    /// @brief 获取句柄对应的通道的使用情况
-    /// @param handle 句柄
-    /// @param remain_size 返回剩余可用的大小
-    /// @param total_size 返回配置可用的大小
-    /// @return 0 查询返回成功
-    /// @return <0 表示失败，错误码@see MessageErrorCode
-    static int32_t GetUsedSize(int64_t handle, uint32_t* remain_size, uint32_t* max_size);
-
-    /// @brief 返回错误信息
-    /// @param 无
-    /// @return 返回错误描述
-    static const char* GetLastError();
+    static int32_t Update();
 
     // -------------------network api end-------------------------
 public:
+	static const int MAX_DRIVER_NUM = 8;
     /// @brief 设置通信驱动(通信库)，运行时只支持一种通信驱动，如rawudp，tbuspp或第3方网络库
     /// @param driver 对MessageDriver接口实现的网络库
     /// @return 0 表示成功
     /// @return -1 表示失败
-    static void SetMessageDriver(MessageDriver* driver);
+    static int32_t AddDriver(cxx::shared_ptr<MessageDriver> driver);
+
+	static cxx::shared_ptr<MessageDriver> GetDriver(int64_t handle);
 
 private:
-    static MessageDriver* m_driver;
+	static MessageCallbacks m_cbs;
+	static int m_driver_num;
+    static cxx::shared_ptr<MessageDriver> m_drivers[MAX_DRIVER_NUM];
+	static std::map<std::string, cxx::shared_ptr<MessageDriver> > m_prefix_to_driver;
 };
 
 } // namespace pebble

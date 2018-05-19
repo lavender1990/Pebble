@@ -21,8 +21,6 @@ namespace pebble {
 
 void RpcEventHandler::ReportTransportQuality(int64_t handle, int32_t ret_code,
     int64_t time_cost_ms) {
-    Message::ReportHandleResult(handle,
-        (ret_code == kRPC_MESSAGE_EXPIRED ? 0 : ret_code), time_cost_ms);
 }
 
 void RpcEventHandler::RequestProcComplete(const std::string& name,

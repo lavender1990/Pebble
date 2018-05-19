@@ -63,7 +63,6 @@ cc_library(
         'pebble_rpc.cpp',
         'processor.cpp',
         'protobuf_rpc_head.cpp',
-        'raw_message_driver.cpp',
         'register_error.cpp',
         'router.cpp',
         'rpc.cpp',
@@ -72,9 +71,11 @@ cc_library(
         'session.cpp',
         'stat_manager.cpp',
         'stat.cpp',
+        'tcp_driver.cpp',
         'when_all.cpp',
     ],
     incs = [
+        '../../thirdparty/libev/include',
     ],
     extra_cppflags = [
         '--std=c++0x',
@@ -85,5 +86,6 @@ cc_library(
         ':gen_protobuf_rpc_head',
         '//src/common/:pebble_common',
         '//src/framework/dr:pebble_dr',
+        '//thirdparty/libev:ev',
     ],
 )

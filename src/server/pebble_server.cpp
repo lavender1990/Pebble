@@ -379,7 +379,12 @@ int32_t PebbleServer::Init(AppEventHandler* event_handler) {
     ret = InitStat();
     CHECK_RETURN(ret);
 
-    ret = Message::Init();
+	MessageCallbacks cbs;
+	using namespace cxx::placeholders;
+	cbs._on_message = cxx::bind(&PebbleServer::OnMessage, this, _1, _2, _3);
+	cbs._on_peer_closed = cxx::bind(&PebbleServer::OnClosed, this, _1, _2);
+	cbs._on_peer_connected = cxx::bind(&PebbleServer::OnPeerConnected, this, _1, _2);
+    ret = Message::Init(cbs);
     CHECK_RETURN(ret);
 
     InitMonitor();
@@ -406,20 +411,20 @@ int32_t PebbleServer::Init(AppEventHandler* event_handler) {
 
 int64_t PebbleServer::Bind(const std::string &url) {
     int64_t handle = Message::Bind(url);
-    PLOG_IF_ERROR(handle < 0, "bind %s failed(%ld:%s)", url.c_str(), handle, Message::GetLastError());
+    PLOG_IF_ERROR(handle < 0, "bind %s failed(%ld)", url.c_str(), handle);
     // tbuspp升级后bind时默认就注册名字了
     return handle;
 }
 
 int64_t PebbleServer::Connect(const std::string &url) {
     int64_t handle = Message::Connect(url);
-    PLOG_IF_ERROR(handle < 0, "connect %s failed(%ld:%s)", url.c_str(), handle, Message::GetLastError());
+    PLOG_IF_ERROR(handle < 0, "connect %s failed(%ld)", url.c_str(), handle);
     return handle;
 }
 
 int32_t PebbleServer::Close(int64_t handle) {
     int32_t ret = Message::Close(handle);
-    PLOG_IF_ERROR(ret != 0, "close %ld failed(%s)", handle, Message::GetLastError());
+    PLOG_IF_ERROR(ret != 0, "close %ld failed", handle);
     return ret;
 }
 
@@ -613,12 +618,7 @@ int32_t PebbleServer::Update() {
 
     Log::Instance().SetCurrentTime(old);
 
-    for (uint32_t i = 0; i < m_options._max_msg_num_per_loop; ++i) {
-        if (ProcessMessage() <= 0) {
-            break;
-        }
-        num++;
-    }
+	num += Message::Update();
 
     for (int32_t i = 0; i < kNAMING_BUTT; ++i) {
         if (m_naming_array[i]) {
@@ -723,45 +723,29 @@ void PebbleServer::Idle() {
     usleep(m_options._idle_us);
 }
 
-int32_t PebbleServer::ProcessMessage() {
-    int64_t handle = -1;
-    int32_t event  = 0;
-    int32_t ret = Message::Poll(&handle, &event, 0);
-    if (ret != 0) {
-        return 0;
-    }
-
-    const uint8_t* msg = NULL;
-    uint32_t msg_len   = 0;
-    ret = Message::Peek(handle, &msg, &msg_len, &m_last_msg_info);
-    do {
-        if (kMESSAGE_RECV_EMPTY == ret) {
-            PLOG_INFO_N_EVERY_SECOND(1, "peek empty msg");
-            break;
-        }
-        if (ret != 0) {
-            PLOG_ERROR_N_EVERY_SECOND(1, "peek failed(%d:%s)", ret, Message::GetLastError());
-            break;
-        }
-
-        cxx::unordered_map<int64_t, IProcessor*>::iterator it = m_processor_map.find(m_last_msg_info._self_handle);
-        if (m_processor_map.end() == it) {
-            Message::Pop(handle);
-            PLOG_ERROR_N_EVERY_SECOND(1, "handle(%ld) not attach a processor remote(%ld)", m_last_msg_info._self_handle, m_last_msg_info._remote_handle);
-            break;
-        }
-
-        m_is_overload = kNO_OVERLOAD;
-        if (m_options._enable_flow_control) {
-            m_message_expire_monitor->OnMessage(m_last_msg_info._msg_arrived_ms);
-            m_task_monitor->SetTaskNum(m_coroutine_schedule->Size()); // 内部实现暂使用协程数
-            m_is_overload = m_monitor_centor->IsOverLoad();
-        }
-        it->second->OnMessage(m_last_msg_info._remote_handle, msg, msg_len, &m_last_msg_info, m_is_overload);
-        Message::Pop(handle);
-    } while (0);
+int32_t PebbleServer::OnMessage(const uint8_t* msg, uint32_t msg_len, MsgExternInfo* info) {
+    cxx::unordered_map<int64_t, IProcessor*>::iterator it = m_processor_map.find(info->_self_handle);
+    if (m_processor_map.end() == it) {
+        PLOG_ERROR_N_EVERY_SECOND(1, "handle(%ld) not attach a processor remote(%ld)", info->_self_handle, info->_remote_handle);
+    } else {
+	    m_is_overload = kNO_OVERLOAD;
+	    if (m_options._enable_flow_control) {
+	        m_message_expire_monitor->OnMessage(info->_msg_arrived_ms);
+	        m_task_monitor->SetTaskNum(m_coroutine_schedule->Size()); // 内部实现暂使用协程数
+	        m_is_overload = m_monitor_centor->IsOverLoad();
+	    }
+	    it->second->OnMessage(info->_remote_handle, msg, msg_len, info, m_is_overload);
+	}
 
     return 1;
+}
+
+int32_t PebbleServer::OnPeerConnected(int64_t local_handle, int64_t peer_hanlde) {
+	return 0;
+}
+	
+int32_t PebbleServer::OnClosed(int64_t local_handle, int64_t peer_hanlde) {
+	return 0;
 }
 
 void PebbleServer::InitLog() {
@@ -1084,8 +1068,7 @@ int32_t PebbleServer::InitControlService() {
     // 所以依赖地址全格式统一放到配置中，避免对代码有影响
     int64_t handle = Bind(m_options._app_ctrl_cmd_addr);
     if (handle < 0) {
-        PLOG_ERROR("bind %s failed(%ld,%s)", m_options._app_ctrl_cmd_addr.c_str(), handle,
-            Message::GetLastError());
+        PLOG_ERROR("bind %s failed(%ld)", m_options._app_ctrl_cmd_addr.c_str(), handle);
         return -1;
     }
 

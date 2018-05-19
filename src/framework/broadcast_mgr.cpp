@@ -87,7 +87,7 @@ int32_t BroadcastMgr::Update(uint32_t overload) {
 int64_t BroadcastMgr::BindRelayAddress(const std::string& url) {
     int64_t handle = Message::Bind(url);
     if (handle < 0) {
-        PLOG_ERROR("bind %s failed(%d:%s)", url.c_str(), handle, Message::GetLastError());
+        PLOG_ERROR("bind %s failed(%d)", url.c_str(), handle);
         return -1;
     }
 
@@ -306,7 +306,7 @@ int32_t BroadcastMgr::RelayV(const std::string& channel, uint32_t msg_frag_num,
         if (ait->_handle < 0) {
             handle = Message::Connect(ait->_url);
             if (handle < 0) {
-                PLOG_ERROR("connect %s failed(%d:%s)", ait->_url.c_str(), handle, Message::GetLastError());
+                PLOG_ERROR("connect %s failed(%d)", ait->_url.c_str(), handle);
                 continue;
             }
             ait->_handle = handle;
@@ -335,7 +335,7 @@ void BroadcastMgr::CloseRelayConnections(const std::string& channel) {
     for (std::vector<Address>::iterator ait = it->second.begin(); ait != it->second.end(); ++ait) {
         if (ait->_handle >= 0) {
             ret = Message::Close(ait->_handle);
-            PLOG_IF_ERROR(ret, "close %ld failed(%d:%s)", ait->_handle, ret, Message::GetLastError());
+            PLOG_IF_ERROR(ret, "close %ld failed(%d)", ait->_handle, ret);
         }
     }
     m_relay_connection_map.erase(it);
@@ -355,7 +355,7 @@ void BroadcastMgr::OnChannelChanged(const std::string& path,
         for (; ait != address_array.end(); ++ait) {
             if (ait->_handle >= 0) {
                 ret = Message::Close(ait->_handle);
-                PLOG_IF_ERROR(ret, "close %ld failed(%d:%s)", ait->_handle, ret, Message::GetLastError());
+                PLOG_IF_ERROR(ret, "close %ld failed(%d)", ait->_handle, ret);
             }
         }
         address_array.clear();

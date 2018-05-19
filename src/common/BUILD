@@ -10,6 +10,7 @@ cc_library(
         'error.cpp',
         'file_util.cpp',
         'ini_reader.cpp',
+        'kv_cache.cpp',
         'log.cpp',
         'memory.cpp',
         'net_util.cpp',
