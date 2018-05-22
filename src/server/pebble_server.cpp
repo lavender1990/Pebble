@@ -303,6 +303,7 @@ PebbleServer::PebbleServer() {
     m_last_pid_cpu_use   = 0;
     m_last_total_cpu_use = 0;
     m_event_handler      = NULL;
+	m_net_event_handler	 = NULL;
     m_session_mgr        = NULL;
     m_broadcast_mgr      = NULL;
     m_broadcast_relay_handler = NULL;
@@ -355,14 +356,15 @@ PebbleServer::~PebbleServer() {
     delete m_control_handler;
 }
 
-int32_t PebbleServer::Init(AppEventHandler* event_handler) {
+int32_t PebbleServer::Init(AppEventHandler* app_event_handler, NetEventHandler* net_event_handler) {
     // 具体模块初始化失败的详细信息应该在具体的init中输出，这里统一返回
     #define CHECK_RETURN(ret) \
         if (ret) { \
             return -1; \
         }
 
-    m_event_handler = event_handler;
+    m_event_handler = app_event_handler;
+	m_net_event_handler = net_event_handler;
 
     RegisterErrorString();
 
@@ -742,14 +744,23 @@ int32_t PebbleServer::OnMessage(const uint8_t* msg, uint32_t msg_len, MsgExternI
 }
 
 int32_t PebbleServer::OnPeerConnected(int64_t local_handle, int64_t peer_hanlde) {
+	if (m_net_event_handler) {
+		m_net_event_handler->OnPeerConnected(local_handle, peer_hanlde);
+	}
 	return 0;
 }
 	
 int32_t PebbleServer::OnPeerClosed(int64_t local_handle, int64_t peer_hanlde) {
+	if (m_net_event_handler) {
+		m_net_event_handler->OnPeerClosed(local_handle, peer_hanlde);
+	}
 	return 0;
 }
 
 int32_t PebbleServer::OnClosed(int64_t handle) {
+	if (m_net_event_handler) {
+		m_net_event_handler->OnClosed(handle);
+	}
 	return 0;
 }
 

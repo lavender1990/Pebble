@@ -56,7 +56,7 @@ typedef enum {
 /// @return >0 使用返回值作为新的超时时间(ms)重启定时器
 /// @note 超时回调中不能有阻塞操作
 /// @see OnTimerCallbackReturnCode
-typedef cxx::function<int32_t()> TimeoutCallback;
+typedef cxx::function<int32_t(int64_t)> TimeoutCallback;
 
 
 /// @brief 定时器接口
@@ -76,6 +76,8 @@ public:
     /// @return 0 成功
     /// @return <0 失败 @see TimerErrorCode
     virtual int32_t StopTimer(int64_t timer_id) = 0;
+
+	virtual int32_t ReStartTimer(int64_t timer_id) = 0;
 
     /// @brief 定时器驱动
     /// @return 超时定时器数，为0时表示本轮无定时器超时
@@ -158,6 +160,9 @@ public:
     /// @see Timer::StopTimer
     virtual int32_t StopTimer(int64_t timer_id);
 
+	/// @see Timer::ReStartTimer
+	virtual int32_t ReStartTimer(int64_t timer_id);
+
     /// @see Timer::Update
     virtual int32_t Update();
 
@@ -172,14 +177,19 @@ public:
     }
 
 private:
+	enum TimerStatus {
+		RUN = 0,
+		STOP,
+		RESTART
+	};
     struct TimerItem {
         TimerItem() {
-            stoped  = false;
+            status  = RUN;
             id      = -1;
             timeout = 0;
         }
 
-        bool    stoped;
+        int     status;
         int64_t id;
         int64_t timeout;
         TimeoutCallback cb;

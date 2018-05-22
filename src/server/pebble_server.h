@@ -92,6 +92,18 @@ public:
     virtual int32_t OnIdle() { return 0; }
 };
 
+class NetEventHandler {
+public:
+	NetEventHandler() {}
+	virtual ~NetEventHandler() {}
+
+	virtual void OnPeerConnected(int64_t local_handle, int64_t peer_hanlde) {}
+	
+	virtual void OnPeerClosed(int64_t local_handle, int64_t peer_hanlde) {}
+
+	virtual void OnClosed(int64_t handle) {}
+};
+
 //////////////////////////////////////////////////////////////////////////////////////
 
 /// @brief 名字服务类型定义
@@ -148,7 +160,7 @@ public:
     /// @return 0 成功
     /// @return <0 失败
     /// @note 若对pebble配置有修改，需要在Init调用前调用配置相关设置
-    int32_t Init(AppEventHandler* event_handler = NULL);
+    int32_t Init(AppEventHandler* app_event_handler = NULL, NetEventHandler* net_event_handler = NULL);
 
     /// @brief （服务端）把一个句柄绑定到指定url
     /// @param url 指定url，形式类似：
@@ -392,6 +404,7 @@ private:
     int64_t            m_last_total_cpu_use;
     uint32_t           m_stat_timer_ms; // 资源使用采样定时器，供统计用
     AppEventHandler*   m_event_handler;
+	NetEventHandler*   m_net_event_handler;
     SessionMgr*        m_session_mgr;
     BroadcastMgr*      m_broadcast_mgr;
     BroadcastRelayHandler* m_broadcast_relay_handler;

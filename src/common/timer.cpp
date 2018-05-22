@@ -199,7 +199,7 @@ int64_t SequenceTimer::StartTimer(uint32_t timeout_ms, const TimeoutCallback& cb
     }
 
     cxx::shared_ptr<TimerItem> item(new TimerItem);
-    item->stoped   = false;
+    item->status   = RUN;
     item->id       = m_timer_seqid;
     item->timeout  = TimeUtility::GetCurrentMS() + timeout_ms;
     item->cb       = cb;
@@ -218,8 +218,21 @@ int32_t SequenceTimer::StopTimer(int64_t timer_id) {
         return kTIMER_UNEXISTED;
     }
 
-    it->second->stoped = true;
+    it->second->status = STOP;
     m_id_2_timer.erase(it);
+
+    return 0;
+}
+
+int32_t SequenceTimer::ReStartTimer(int64_t timer_id) {
+	cxx::unordered_map<int64_t, cxx::shared_ptr<TimerItem> >::iterator it =
+        m_id_2_timer.find(timer_id);
+    if (m_id_2_timer.end() == it) {
+        _LOG_LAST_ERROR("timer id %ld not exist", timer_id);
+        return kTIMER_UNEXISTED;
+    }
+
+    it->second->status = RESTART;
 
     return 0;
 }
@@ -240,10 +253,14 @@ int32_t SequenceTimer::Update() {
         std::list<cxx::shared_ptr<TimerItem> >& timer_list = mit->second;
         while (!timer_list.empty()) {
             lit = timer_list.begin();
-            if ((*lit)->stoped) {
+            if ((*lit)->status == STOP) {
                 timer_list.erase(lit);
                 continue;
-            }
+            } else if ((*lit)->status == RESTART) {
+            	timer_list.push_back(*lit);
+				timer_list.erase(lit);
+				continue;
+			}
 
             if ((*lit)->timeout > now) {
                 // 此队列后面的都未超时
@@ -251,7 +268,7 @@ int32_t SequenceTimer::Update() {
             }
 
             old_timeout = mit->first;
-            ret = (*lit)->cb();
+            ret = (*lit)->cb((*lit)->id);
 
             // 返回 <0 删除定时器，=0 继续，>0按新的超时时间重启定时器
             if (ret < 0) {
