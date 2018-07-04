@@ -144,7 +144,7 @@ public:
     /// @return 0成功，其他失败，错误码意义见@ref ZookeeperErrorCode
     /// @note  注册监控成功时会在此接口中回调 CbNodeChanged 通知地址信息。\n
     ///        即使当前节点不存在或其它原因失败导致zk节点上没有添加成功监控点，在恢复后也可以监控
-    virtual int32_t WatchName(const std::string& name, const WatchFunc& wc);
+    virtual int32_t WatchName(const std::string& name, const CbNodeChanged& wc);
 
     /// @brief 异步监控名字变化
     /// @param name 名字(带完整路径，支持*通配符号，格式"/a/b"或"/a*/*b/c*d/*")
@@ -152,7 +152,7 @@ public:
     /// @return 0成功，其他失败，错误码意义见@ref ZookeeperErrorCode
     /// @note  注册监控成功时，在cb回调前，会通过 CbNodeChanged 通知地址信息。\n
     ///        即使当前节点不存在或其它原因失败导致zk节点上没有添加成功监控点，在恢复后也可以监控
-    virtual int32_t WatchNameAsync(const std::string& name, const WatchFunc& wc, const CbReturnCode& cb);
+    virtual int32_t WatchNameAsync(const std::string& name, const CbNodeChanged& wc, const CbReturnCode& cb);
 
     /// @brief 驱动异步更新
     virtual int32_t Update();
@@ -167,7 +167,7 @@ private:
     void OnNodeChanged(const std::string& name, const std::vector<std::string>& urls);
 
     void OnWatchNameReturn(int rc, const std::string& name,
-        const WatchFunc& wc, const CbReturnCode& cb);
+        const CbNodeChanged& wc, const CbReturnCode& cb);
 
     std::string m_zk_path;
 
@@ -179,8 +179,8 @@ private:
     std::map<std::string, std::string>  m_app_infos;
     std::map<std::string, std::string>  m_inst_names_map;
 
-    std::map<std::string, std::vector<WatchFunc> > m_watch_callbacks;
-    std::map<std::string, std::vector<WatchFunc> > m_watch_wildcard_callbacks;
+    std::map<std::string, std::vector<CbNodeChanged> > m_watch_callbacks;
+    std::map<std::string, std::vector<CbNodeChanged> > m_watch_wildcard_callbacks;
 };
 
 class ZookeeperNamingFactory : public NamingFactory {

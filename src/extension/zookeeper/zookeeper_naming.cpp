@@ -420,7 +420,7 @@ int32_t ZookeeperNaming::GetAsyncRaw(const std::string& name, const CbReturnValu
     return op_handle->Start(name, get_cb, true);
 }
 
-int32_t ZookeeperNaming::WatchName(const std::string& name, const WatchFunc& wc)
+int32_t ZookeeperNaming::WatchName(const std::string& name, const CbNodeChanged& wc)
 {
     SyncWaitAdaptor *sync_adaptor = NULL;
     CbReturnCode ret_cob = NULL;
@@ -443,7 +443,7 @@ int32_t ZookeeperNaming::WatchName(const std::string& name, const WatchFunc& wc)
     return ret;
 }
 
-int32_t ZookeeperNaming::WatchNameAsync(const std::string& name, const WatchFunc& wc,
+int32_t ZookeeperNaming::WatchNameAsync(const std::string& name, const CbNodeChanged& wc,
     const CbReturnCode& cb)
 {
     if (name.empty() || !cb) {
@@ -545,23 +545,23 @@ int32_t ZookeeperNaming::GetDigestPassword(const std::string& name, std::string*
 void ZookeeperNaming::OnNodeChanged(const std::string& name, const std::vector<std::string>& urls)
 {
     PLOG_INFO("ZookeeperNaming OnNodeChanged : name[%s] urls.size[%d]", name.c_str(), urls.size());
-    std::map<std::string, std::vector<WatchFunc> >::iterator it = m_watch_callbacks.find(name);
+    std::map<std::string, std::vector<CbNodeChanged> >::iterator it = m_watch_callbacks.find(name);
     if (it != m_watch_callbacks.end()) {
-        for (std::vector<WatchFunc>::iterator fit = it->second.begin();
+        for (std::vector<CbNodeChanged>::iterator fit = it->second.begin();
             fit != it->second.end(); ++fit) {
-            (*fit)(urls);
+            (*fit)(name, urls);
         }
     }
 
     // 对通配部分进行匹配处理
     int32_t match = 0;
-    for (std::map<std::string, std::vector<WatchFunc> >::iterator wit = m_watch_wildcard_callbacks.begin();
+    for (std::map<std::string, std::vector<CbNodeChanged> >::iterator wit = m_watch_wildcard_callbacks.begin();
         wit != m_watch_wildcard_callbacks.end(); ++wit) {
         match = IsPathMatched(wit->first, name);
         if (match == 0) {
-            for (std::vector<WatchFunc>::iterator fit = wit->second.begin();
+            for (std::vector<CbNodeChanged>::iterator fit = wit->second.begin();
                 fit != wit->second.end(); ++fit) {
-                (*fit)(urls);
+                (*fit)(name, urls);
             }
         } else if (match < 0) {
             break;
@@ -570,7 +570,7 @@ void ZookeeperNaming::OnNodeChanged(const std::string& name, const std::vector<s
 }
 
 void ZookeeperNaming::OnWatchNameReturn(int rc, const std::string& name,
-    const WatchFunc& wc, const CbReturnCode& cb) {
+    const CbNodeChanged& wc, const CbReturnCode& cb) {
     // watch 成功才记录
     if (rc == 0) {
         if (std::string::npos != name.find(WildcardName)) {
