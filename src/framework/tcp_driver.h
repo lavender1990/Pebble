@@ -16,8 +16,9 @@
 #define _PEBBLE_TCP_DRIVER_H_
 
 #include "framework/message.h"
-#include "ev.h"
+//#include "ev.h"
 
+struct ev_loop;
 
 namespace pebble {
 
@@ -53,6 +54,7 @@ public:
 
 	virtual const char* Prefix() const { return "tcp"; }
 
+public:
 	virtual int32_t ParseHead(const uint8_t* head, uint32_t head_len, uint32_t* data_len);
 
 	virtual int32_t OnMessage(Connection* connection, const uint8_t* msg, uint32_t msg_len);

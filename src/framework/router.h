@@ -116,7 +116,7 @@ public:
     virtual void SetOnAddressChanged(const OnAddressChanged& on_address_changed);
 
 protected:
-    void NameWatch(const std::vector<std::string>& urls);
+    void NameWatch(const std::string& name, const std::vector<std::string>& urls);
 
     std::string             m_route_name;
     RoutePolicyType         m_route_type;

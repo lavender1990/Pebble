@@ -24,6 +24,7 @@
 #include "common/log.h"
 #include "common/string_utility.h"
 #include "common/time_utility.h"
+#include "ev.h"
 #include "framework/tcp_driver.h"
 
 
@@ -506,7 +507,7 @@ int32_t TcpDriver::Init() {
 
 	m_common_buff = new char[DEFAULT_COMMON_BUFF_LEN];
 
-	m_loop = ev_default_loop(0);
+	m_loop = ev_default_loop(0); // TODO: NEW, confict with business
 
 	signal(SIGPIPE, SIG_IGN);
 

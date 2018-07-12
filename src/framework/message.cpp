@@ -129,7 +129,7 @@ int32_t Message::Update() {
     return num;
 }
 
-int32_t Message::AddDriver(cxx::shared_ptr<MessageDriver> driver) {
+int32_t Message::AddDriver(const cxx::shared_ptr<MessageDriver>& driver) {
 	if (!driver) {
 		return kMESSAGE_INVAILD_PARAM;
 	}

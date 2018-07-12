@@ -22,6 +22,12 @@
 
 namespace pebble {
 
+/// @brief 名字节点信息变化通知回调函数
+/// @param name 名字(带完整路径)
+/// @param urls 变化后的url列表
+typedef cxx::function<void(const std::string& name,
+    const std::vector<std::string>& urls)> CbNodeChanged;
+
 typedef cxx::function<void(const std::vector<std::string>& urls)> WatchFunc;
 /// @brief 异步注册接口的执行结果回调
 /// @param rc 执行结果返回值
@@ -89,7 +95,7 @@ public:
     { return kNAMING_NOT_SUPPORTTED; }
 
     /// @brief 观察名字，在名字的地址列表变化时主动通知
-    virtual int32_t WatchName(const std::string& name, const WatchFunc& wc)
+    virtual int32_t WatchName(const std::string& name, const CbNodeChanged& wc)
     { return kNAMING_NOT_SUPPORTTED; }
 
     /// @brief 取消对名字的观察
@@ -142,7 +148,7 @@ public:
     virtual int32_t GetUrlsByNameAsync(const std::string& name, const CbReturnValue& cb)
     { return kNAMING_NOT_SUPPORTTED; }
 
-    virtual int32_t WatchNameAsync(const std::string& name, const WatchFunc& wc, const CbReturnCode& cb)
+    virtual int32_t WatchNameAsync(const std::string& name, const CbNodeChanged& wc, const CbReturnCode& cb)
     { return kNAMING_NOT_SUPPORTTED; }
 };
 

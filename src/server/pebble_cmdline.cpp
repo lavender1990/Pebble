@@ -118,17 +118,16 @@ int CmdLineHandler::OnStart() {
 
 int CmdLineHandler::OnStop() {
     // 读pid文件
-    pid_t pid = 0;
-    int ret = ReadPidFile(&pid);
-    if (ret < 0) {
-        fprintf(stderr, "stop failed.\n");
+    int pid = ReadPidFile();
+    if (pid <= 0) {
+        fprintf(stderr, "stop %d failed.\n", pid);
         return -1;
     }
 
     // 发送信号
-    ret = kill(pid, SIGUSR1);
+    int ret = kill(pid, SIGUSR1);
     if (ret != 0) {
-        fprintf(stderr, "stop failed because %s\n", strerror(errno));
+        fprintf(stderr, "stop %d failed because %s\n", pid, strerror(errno));
         return -1;
     }
 
@@ -137,17 +136,16 @@ int CmdLineHandler::OnStop() {
 
 int CmdLineHandler::OnReload() {
     // 读pid文件
-    pid_t pid = 0;
-    int ret = ReadPidFile(&pid);
-    if (ret < 0) {
-        fprintf(stderr, "reload failed.\n");
+    int pid = ReadPidFile();
+    if (pid < 0) {
+        fprintf(stderr, "reload %d failed.\n", pid);
         return -1;
     }
 
     // 发送信号
-    ret = kill(pid, SIGUSR2);
+    int ret = kill(pid, SIGUSR2);
     if (ret != 0) {
-        fprintf(stderr, "reload failed because %s\n", strerror(errno));
+        fprintf(stderr, "reload %d failed because %s\n", pid, strerror(errno));
         return -1;
     }
 
@@ -161,7 +159,7 @@ const char* CmdLineHandler::ConfigFile() const {
     return m_conf_file.c_str();
 }
 
-int CmdLineHandler::ReadPidFile(pid_t* pid) {
+int CmdLineHandler::ReadPidFile() {
     FILE* file = fopen(m_pid_file.c_str(), "r");
     if (NULL == file) {
         fprintf(stderr, "open %s failed because %s\n", m_pid_file.c_str(), strerror(errno));
@@ -175,9 +173,8 @@ int CmdLineHandler::ReadPidFile(pid_t* pid) {
         return -1;
     }
 
-    *pid = atoi(pidstr);
     fclose(file);
-    return 0;
+    return atoi(pidstr);
 }
 
 class AutoCloseFile {

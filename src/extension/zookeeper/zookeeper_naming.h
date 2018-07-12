@@ -41,13 +41,6 @@ class ZookeeperClient;
 class ZookeeperCache;
 
 
-/// @brief 名字节点信息变化通知回调函数
-/// @param name 名字(带完整路径)
-/// @param urls 变化后的url列表
-typedef cxx::function<void(const std::string& name,
-    const std::vector<std::string>& urls)> CbNodeChanged;
-
-
 class ZookeeperNaming : public Naming {
 public:
     ZookeeperNaming();

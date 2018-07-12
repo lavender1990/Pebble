@@ -115,7 +115,7 @@ int32_t BroadcastMgr::OpenChannel(const std::string& channel) {
     }
 
     ret = m_naming->WatchName(oss.str(), cxx::bind(&BroadcastMgr::OnChannelChanged, this,
-        oss.str(), cxx::placeholders::_1));
+		cxx::placeholders::_1, cxx::placeholders::_2));
     PLOG_IF_ERROR(ret, "watch %s failed(%d)", oss.str().c_str(), ret);
 
     ret = m_channel_mgr->OpenChannel(channel);
@@ -147,7 +147,7 @@ int32_t BroadcastMgr::OpenChannelAsync(const std::string& channel, const CbHandl
     }
 
     ret = m_naming->WatchNameAsync(oss.str(),
-        cxx::bind(&BroadcastMgr::OnChannelChanged, this, oss.str(), cxx::placeholders::_1),
+        cxx::bind(&BroadcastMgr::OnChannelChanged, this, cxx::placeholders::_1, cxx::placeholders::_2),
         cxx::bind(&BroadcastMgr::OnWatchReturn, this, cxx::placeholders::_1, channel));
     PLOG_IF_ERROR(ret, "watch %s failed(%d)", oss.str().c_str(), ret);
 

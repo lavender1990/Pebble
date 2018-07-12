@@ -43,7 +43,7 @@ int32_t Router::Init(Naming* naming)
         m_naming->UnWatchName(m_route_name);
     }
     m_naming = naming;
-    WatchFunc cob = cxx::bind(&Router::NameWatch, this, cxx::placeholders::_1);
+    CbNodeChanged cob = cxx::bind(&Router::NameWatch, this, cxx::placeholders::_1, cxx::placeholders::_2);
     int32_t ret = m_naming->WatchName(m_route_name, cob);
     if (0 != ret) {
         return kROUTER_INVAILD_PARAM;
@@ -86,7 +86,7 @@ int64_t Router::GetRoute(uint64_t key)
     return kROUTER_NOT_SUPPORTTED;
 }
 
-void Router::NameWatch(const std::vector<std::string>& urls)
+void Router::NameWatch(const std::string& name, const std::vector<std::string>& urls)
 {
     // TODO: 后续优化，目前实现有点粗暴
     for (uint32_t idx = 0 ; idx < m_route_handles.size() ; ++idx) {

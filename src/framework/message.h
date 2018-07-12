@@ -225,7 +225,7 @@ public:
     /// @param driver 对MessageDriver接口实现的网络库
     /// @return 0 表示成功
     /// @return -1 表示失败
-    static int32_t AddDriver(cxx::shared_ptr<MessageDriver> driver);
+    static int32_t AddDriver(const cxx::shared_ptr<MessageDriver>& driver);
 
 	static cxx::shared_ptr<MessageDriver> GetDriver(int64_t handle);
 

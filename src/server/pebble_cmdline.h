@@ -42,7 +42,7 @@ private:
     int OnStart();
     int OnStop();
     int OnReload();
-    int ReadPidFile(int* pid);
+    int ReadPidFile();
     int WritePidFile();
 
 private:
