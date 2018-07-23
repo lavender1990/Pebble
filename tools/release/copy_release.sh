@@ -26,6 +26,7 @@ function copy_library_files()
         protobuf/libprotobuf.a                              thirdparty/
         zookeeper/libzookeeper_st.a                         thirdparty/
         gflags-2.0/src/libgflags.a                          thirdparty/
+        libev/libev.a                                       thirdparty/
 	LIB_LIST
 
     copy_file_list "build64_release/src" "lib" <<- LIB_LIST
@@ -49,6 +50,7 @@ function copy_include_files()
         zookeeper/include/*                                 zookeeper/include/
         gflags-2.0/src/gflags/*.h                           gflags/
         protobuf/include/*                                  ./
+        libev/include/*                                     libev/
 	INC_LIST
 
     copy_file_list "src" "include/pebble" <<- INC_LIST

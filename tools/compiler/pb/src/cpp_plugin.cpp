@@ -183,7 +183,7 @@ public:
                             std::string* error) const {
         if (file->options().cc_generic_services()) {
             *error = "cpp pebble proto compiler plugin does not work with generic service."
-                    "To generate pebble service, please set \"cc_generic_service = false\".";
+                    "To generate pebble service, please set \"cc_generic_services = false\".";
             return false;
         }
 
