@@ -72,6 +72,9 @@ public:
 
 	char* GetCommonBuff() { return m_common_buff; }
 
+protected:
+	int32_t SendRaw(int64_t handle, uint32_t msg_frag_num, const uint8_t* msg_frag[], uint32_t msg_frag_len[]);
+
 private:
 	struct ev_loop* m_loop;
 	KVCache* m_send_cache;

@@ -571,11 +571,6 @@ int32_t TcpDriver::Send(int64_t handle, const uint8_t* msg, uint32_t msg_len, in
 
 int32_t TcpDriver::SendV(int64_t handle, uint32_t msg_frag_num,
                           const uint8_t* msg_frag[], uint32_t msg_frag_len[], int32_t flag) {
-    cxx::unordered_map<int64_t, cxx::shared_ptr<Connection> >::iterator it = m_connections.find(handle);
-	if (m_connections.end() == it) {
-		return kMESSAGE_INVAILD_HANDLE;
-	}
-
     if (msg_frag_num + 1 > Message::MAX_SENDV_DATA_NUM) {
         PLOG_ERROR_N_EVERY_SECOND(1, "msg_frag_num %d > MAX_FRAG %d", msg_frag_num, Message::MAX_SENDV_DATA_NUM);
         return kMESSAGE_SYSTEM_ERROR;
@@ -599,7 +594,16 @@ int32_t TcpDriver::SendV(int64_t handle, uint32_t msg_frag_num,
     tmp_frags[0]    = (uint8_t*)(&head);
     tmp_frag_len[0] = sizeof(TcpMsgHead);
 
-	return it->second->SendV(msg_frag_num + 1, tmp_frags, tmp_frag_len);
+	return SendRaw(handle, msg_frag_num + 1, tmp_frags, tmp_frag_len);
+}
+
+int32_t TcpDriver::SendRaw(int64_t handle, uint32_t msg_frag_num, const uint8_t* msg_frag[], uint32_t msg_frag_len[]) {
+	cxx::unordered_map<int64_t, cxx::shared_ptr<Connection> >::iterator it = m_connections.find(handle);
+	if (m_connections.end() == it) {
+		return kMESSAGE_INVAILD_HANDLE;
+	}
+
+	return it->second->SendV(msg_frag_num, msg_frag, msg_frag_len);
 }
 
 int32_t TcpDriver::Close(int64_t handle) {
