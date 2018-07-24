@@ -674,7 +674,7 @@ int32_t TcpDriver::OnMessage(Connection* connection, const uint8_t* msg, uint32_
 	int32_t  proc_len = 0;
 	do {
 		uint32_t data_len = 0;
-		int head_len = ParseHead(msg, msg_len, &data_len);
+		int head_len = ParseHead(buff, buff_len, &data_len);
 		if (head_len < 0) {
 			break;
 		}
