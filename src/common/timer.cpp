@@ -257,6 +257,7 @@ int32_t SequenceTimer::Update() {
                 timer_list.erase(lit);
                 continue;
             } else if ((*lit)->status == RESTART) {
+            	(*lit)->status = RUN;
             	timer_list.push_back(*lit);
 				timer_list.erase(lit);
 				continue;
