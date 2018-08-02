@@ -6,6 +6,7 @@ cc_library(
         'condition_variable.cpp',
         'coroutine.cpp',
         'cpu.cpp',
+		'db_list.cpp',
         'dir_util.cpp',
         'error.cpp',
         'file_util.cpp',
