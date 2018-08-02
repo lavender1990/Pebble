@@ -14,8 +14,7 @@
 #ifndef _PEBBLE_COMMON_TIMER_H_
 #define _PEBBLE_COMMON_TIMER_H_
 
-#include <list>
-
+#include "common/db_list.h"
 #include "common/error.h"
 #include "common/platform.h"
 
@@ -173,34 +172,31 @@ public:
 
     /// @see Timer::GetTimerNum
     virtual int64_t GetTimerNum() {
-        return m_id_2_timer.size();
+        return m_timers.size();
     }
 
 private:
-	enum TimerStatus {
-		RUN = 0,
-		STOP,
-		RESTART
-	};
     struct TimerItem {
         TimerItem() {
-            status  = RUN;
             id      = -1;
-            timeout = 0;
+            timeout_ms = 0;
+			start_time = -1;
         }
 
-        int     status;
+		DbListItem list_item;
+
         int64_t id;
-        int64_t timeout;
+        uint32_t timeout_ms;
+		int64_t start_time;
         TimeoutCallback cb;
     };
 
 private:
     int64_t m_timer_seqid;
-    // map<timeout_ms, list<TimerItem> >
-    cxx::unordered_map<uint32_t, std::list<cxx::shared_ptr<TimerItem> > > m_timers;
+    // map<timeout_ms, dblist head >
+    cxx::unordered_map<uint32_t, DbListItem> m_timer_lists;
     // map<timer_seqid, TimerItem>
-    cxx::unordered_map<int64_t, cxx::shared_ptr<TimerItem> > m_id_2_timer;
+    cxx::unordered_map<int64_t, TimerItem*> m_timers;
     char m_last_error[256];
 };
 

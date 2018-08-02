@@ -12,6 +12,7 @@
  */
 
 #include <algorithm>
+#include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <string.h>
@@ -21,6 +22,14 @@
 
 #include "common/time_utility.h"
 #include "common/timer.h"
+
+#ifndef offsetof
+#define offsetof(s,m) (size_t)(&reinterpret_cast<const volatile char&>((((s *)0x1)->m)) - 0x1)
+#endif
+
+#ifndef container
+#define container(TYPE, MEMBER, pMember) (NULL == pMember ? NULL:((TYPE*)((size_t)(pMember)-offsetof(TYPE,MEMBER))))
+#endif
 
 
 namespace pebble {
@@ -198,41 +207,53 @@ int64_t SequenceTimer::StartTimer(uint32_t timeout_ms, const TimeoutCallback& cb
         return kTIMER_INVALID_PARAM;
     }
 
-    cxx::shared_ptr<TimerItem> item(new TimerItem);
-    item->status   = RUN;
-    item->id       = m_timer_seqid;
-    item->timeout  = TimeUtility::GetCurrentMS() + timeout_ms;
-    item->cb       = cb;
+    TimerItem* item = new TimerItem;
+    item->id         = m_timer_seqid;
+    item->timeout_ms = timeout_ms;
+	item->start_time = TimeUtility::GetCurrentMS();
+    item->cb         = cb;
 
-    m_timers[timeout_ms].push_back(item);
-    m_id_2_timer[m_timer_seqid] = item;
+	DbListItem& head = m_timer_lists[timeout_ms];
+	if (head._next == NULL || head._prev == NULL) {
+		db_list_init(&head);
+	}
+	db_list_add_tail(&head, &item->list_item);
+
+    m_timers[m_timer_seqid] = item;
 
     return m_timer_seqid++;
 }
 
 int32_t SequenceTimer::StopTimer(int64_t timer_id) {
-    cxx::unordered_map<int64_t, cxx::shared_ptr<TimerItem> >::iterator it =
-        m_id_2_timer.find(timer_id);
-    if (m_id_2_timer.end() == it) {
+    cxx::unordered_map<int64_t, TimerItem*>::iterator it = m_timers.find(timer_id);
+    if (m_timers.end() == it) {
         _LOG_LAST_ERROR("timer id %ld not exist", timer_id);
         return kTIMER_UNEXISTED;
     }
 
-    it->second->status = STOP;
-    m_id_2_timer.erase(it);
+	TimerItem* timer_item = it->second;
+	db_list_del(&timer_item->list_item);
+	delete timer_item;
+
+    m_timers.erase(it);
 
     return 0;
 }
 
 int32_t SequenceTimer::ReStartTimer(int64_t timer_id) {
-	cxx::unordered_map<int64_t, cxx::shared_ptr<TimerItem> >::iterator it =
-        m_id_2_timer.find(timer_id);
-    if (m_id_2_timer.end() == it) {
+	cxx::unordered_map<int64_t, TimerItem*>::iterator it = m_timers.find(timer_id);
+    if (m_timers.end() == it) {
         _LOG_LAST_ERROR("timer id %ld not exist", timer_id);
         return kTIMER_UNEXISTED;
     }
 
-    it->second->status = RESTART;
+    TimerItem* timer_item = it->second;
+	timer_item->start_time = TimeUtility::GetCurrentMS();
+	
+	DbListItem& head = m_timer_lists[timer_item->timeout_ms];
+	assert(head._next != NULL && head._prev != NULL);
+	db_list_del(&timer_item->list_item);
+	db_list_add_tail(&head, &timer_item->list_item);
 
     return 0;
 }
@@ -241,60 +262,36 @@ int32_t SequenceTimer::Update() {
     int32_t num = 0;
     int64_t now = TimeUtility::GetCurrentMS();
     int32_t ret = 0;
-    uint32_t old_timeout = 0;
-    uint32_t timer_map_size = m_timers.size();
 
-    cxx::unordered_map<uint32_t, std::list<cxx::shared_ptr<TimerItem> > >::iterator mit =
-        m_timers.begin();
-    std::list<cxx::shared_ptr<TimerItem> >::iterator lit;
-    while (mit != m_timers.end()) {
-        // 暂不考虑主动清理，顺序定时器即使不清理，也不会占用太多内存，频繁清理反而会影响性能
-
-        std::list<cxx::shared_ptr<TimerItem> >& timer_list = mit->second;
-        while (!timer_list.empty()) {
-            lit = timer_list.begin();
-            if ((*lit)->status == STOP) {
-                timer_list.erase(lit);
-                continue;
-            } else if ((*lit)->status == RESTART) {
-            	(*lit)->status = RUN;
-            	timer_list.push_back(*lit);
-				timer_list.erase(lit);
-				continue;
+    cxx::unordered_map<uint32_t, DbListItem>::iterator it = m_timer_lists.begin();
+    for (; it != m_timer_lists.end(); it++) {
+		DbListItem& head = it->second;
+		DbListItem* item = head._next;
+		while (item != &head) {
+			TimerItem* timer_item = container(TimerItem, list_item, item);
+			assert(timer_item);
+			if (timer_item->start_time + timer_item->timeout_ms > now) {
+				break;
 			}
 
-            if ((*lit)->timeout > now) {
-                // 此队列后面的都未超时
-                break;
-            }
+			ret = timer_item->cb(timer_item->id);
+			// 返回 <0 删除定时器，=0 继续，>0按新的超时时间重启定时器
+	        if (ret < 0) {
+				db_list_del(item);
+	            m_timers.erase(timer_item->id);
+				delete item;
+	        } else {
+	            if (ret > 0) {
+	                timer_item->timeout_ms = ret;
+	            }
+				timer_item->start_time = now;
+				db_list_del(item);
+				db_list_add_tail(&head, item);
+	        }
 
-            old_timeout = mit->first;
-            ret = (*lit)->cb((*lit)->id);
-
-            // 返回 <0 删除定时器，=0 继续，>0按新的超时时间重启定时器
-            if (ret < 0) {
-                m_id_2_timer.erase((*lit)->id);
-                timer_list.erase(lit);
-            } else {
-                cxx::shared_ptr<TimerItem> back_item = *lit;
-                timer_list.erase(lit);
-                if (ret > 0) {
-                    back_item->timeout = now + ret;
-                    m_timers[ret].push_back(back_item);
-                } else {
-                    back_item->timeout = now + old_timeout;
-                    timer_list.push_back(back_item);
-                }
-            }
-
-            ++num;
+			item = head._next;
+			num++;
         }
-
-        if (timer_map_size != m_timers.size()) {
-            // 暂时用此方法防止迭代器失效，m_timers目前实现只会增加不会减少
-            break;
-        }
-        ++mit;
     }
 
     return num;
