@@ -29,6 +29,7 @@ typedef enum {
     kTIMER_NUM_OUT_OF_RANGE = kTIMER_ERROR_BASE - 2, // 定时器数量超出限制范围
     kTIMER_UNEXISTED        = kTIMER_ERROR_BASE - 3, // 定时器不存在
     kSYSTEM_ERROR           = kTIMER_ERROR_BASE - 4, // 系统错误
+    kTIMER_IN_CALLBACK      = kTIMER_ERROR_BASE - 5, // 定时器超时回调处理中，stop/restart操作失败，请使用返回值控制
 } TimerErrorCode;
 
 class TimerErrorStringRegister {
@@ -38,6 +39,7 @@ public:
         SetErrorString(kTIMER_NUM_OUT_OF_RANGE, "number of timer out of range");
         SetErrorString(kTIMER_UNEXISTED, "timer unexist");
         SetErrorString(kSYSTEM_ERROR, "system error");
+        SetErrorString(kTIMER_IN_CALLBACK, "timer in timeout callback, can't be stop/restart");
     }
 };
 
@@ -192,6 +194,7 @@ private:
     };
 
 private:
+    bool m_in_callback;
     int64_t m_timer_seqid;
     // map<timeout_ms, dblist head >
     cxx::unordered_map<uint32_t, DbListItem> m_timer_lists;

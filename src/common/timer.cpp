@@ -194,6 +194,7 @@ int32_t FdTimer::Update() {
 #endif
 
 SequenceTimer::SequenceTimer() {
+    m_in_callback = false;
     m_timer_seqid   = 0;
     m_last_error[0] = 0;
 }
@@ -225,6 +226,11 @@ int64_t SequenceTimer::StartTimer(uint32_t timeout_ms, const TimeoutCallback& cb
 }
 
 int32_t SequenceTimer::StopTimer(int64_t timer_id) {
+    if (m_in_callback) {
+        _LOG_LAST_ERROR("timer in callback, can't stop");
+        return kTIMER_IN_CALLBACK;
+    }
+
     cxx::unordered_map<int64_t, TimerItem*>::iterator it = m_timers.find(timer_id);
     if (m_timers.end() == it) {
         _LOG_LAST_ERROR("timer id %ld not exist", timer_id);
@@ -241,6 +247,11 @@ int32_t SequenceTimer::StopTimer(int64_t timer_id) {
 }
 
 int32_t SequenceTimer::ReStartTimer(int64_t timer_id) {
+     if (m_in_callback) {
+        _LOG_LAST_ERROR("timer in callback, can't restart");
+        return kTIMER_IN_CALLBACK;
+    }
+
 	cxx::unordered_map<int64_t, TimerItem*>::iterator it = m_timers.find(timer_id);
     if (m_timers.end() == it) {
         _LOG_LAST_ERROR("timer id %ld not exist", timer_id);
@@ -262,6 +273,7 @@ int32_t SequenceTimer::Update() {
     int32_t num = 0;
     int64_t now = TimeUtility::GetCurrentMS();
     int32_t ret = 0;
+    m_in_callback = true;
 
     cxx::unordered_map<uint32_t, DbListItem>::iterator it = m_timer_lists.begin();
     for (; it != m_timer_lists.end(); it++) {
@@ -275,6 +287,8 @@ int32_t SequenceTimer::Update() {
 			}
 
 			ret = timer_item->cb(timer_item->id);
+            //用户在超时回调中可能stop/restart定时器，这里需要特殊处理
+            
 			// 返回 <0 删除定时器，=0 继续，>0按新的超时时间重启定时器
 	        if (ret < 0) {
 				db_list_del(item);
@@ -293,6 +307,8 @@ int32_t SequenceTimer::Update() {
 			num++;
         }
     }
+
+    m_in_callback = false;
 
     return num;
 }
