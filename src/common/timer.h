@@ -30,6 +30,7 @@ typedef enum {
     kTIMER_UNEXISTED        = kTIMER_ERROR_BASE - 3, // 定时器不存在
     kSYSTEM_ERROR           = kTIMER_ERROR_BASE - 4, // 系统错误
     kTIMER_IN_CALLBACK      = kTIMER_ERROR_BASE - 5, // 定时器超时回调处理中，stop/restart操作失败，请使用返回值控制
+    //TODO:这样做不太好，待改进
 } TimerErrorCode;
 
 class TimerErrorStringRegister {
