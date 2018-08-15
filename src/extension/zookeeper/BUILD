@@ -6,6 +6,7 @@ cc_library(
         'zookeeper_client.cpp',
         'zookeeper_log.cpp',
         'zookeeper_naming.cpp',
+        'zookeeper_router.cpp',
     ],
     incs = [
     ],

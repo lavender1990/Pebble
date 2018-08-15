@@ -75,17 +75,14 @@ public:
     /// @param name 注册的名字的绝对路径，格式："appid[(.path)*].service"
     /// @param url 注册的名字的地址
     ///    格式："tbuspp://name/inst" "tbus://number[(.number)*]" "http://ip:port/name"
-    /// @param instance_id 注册的实例ID
     /// @return 0 成功，其它 @see NamingErrorCode
     virtual int32_t Register(const std::string& name,
-                            const std::string& url,
-                            int64_t instance_id = 0)
+                            const std::string& url)
     { return kNAMING_NOT_SUPPORTTED; }
 
     /// @brief 从名字服务中取消注册
     /// @param name 取消注册的名字的绝对路径
-    /// @param instance_id 取消注册的实例ID
-    virtual int32_t UnRegister(const std::string& name, int64_t instance_id = 0)
+    virtual int32_t UnRegister(const std::string& name)
     { return kNAMING_NOT_SUPPORTTED; }
 
     /// @brief 获取名字对应的所有地址列表
@@ -124,25 +121,21 @@ public:
 public:
     // 下面为名字服务的扩展接口
     virtual int32_t Register(const std::string& name,
-                            const std::vector<std::string>& urls,
-                            int64_t instance_id = 0)
+                            const std::vector<std::string>& urls)
     { return kNAMING_NOT_SUPPORTTED; }
 
     virtual int32_t RegisterAsync(const std::string& name,
                             const std::string& url,
-                            const CbReturnCode& cb,
-                            int64_t instance_id = 0)
+                            const CbReturnCode& cb)
     { return kNAMING_NOT_SUPPORTTED; }
 
     virtual int32_t RegisterAsync(const std::string& name,
                             const std::vector<std::string>& urls,
-                            const CbReturnCode& cb,
-                            int64_t instance_id = 0)
+                            const CbReturnCode& cb)
     { return kNAMING_NOT_SUPPORTTED; }
 
     virtual int32_t UnRegisterAsync(const std::string& name,
-                            const CbReturnCode& cb,
-                            int64_t instance_id = 0)
+                            const CbReturnCode& cb)
     { return kNAMING_NOT_SUPPORTTED; }
 
     virtual int32_t GetUrlsByNameAsync(const std::string& name, const CbReturnValue& cb)

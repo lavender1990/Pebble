@@ -80,20 +80,18 @@ public:
     virtual int32_t SetAppInfo(const std::string& app_id, const std::string& app_key);
 
     virtual int32_t Register(const std::string& name,
-                            const std::string& url,
-                            int64_t instance_id = 0);
+                            const std::string& url);
 
     /// @brief 同步注册到名字服务
     /// @param name 名字(带完整路径)
     /// @param urls 地址列表
     /// @return 0成功，其他失败，错误码意义见@ref ZookeeperErrorCode
     /// @note 对于同步接口调用如果不设置协程调度器或不在协程内调用会一直阻塞等待
-    virtual int32_t Register(const std::string& name, const std::vector<std::string>& urls, int64_t instance_id = 0);
+    virtual int32_t Register(const std::string& name, const std::vector<std::string>& urls);
 
     virtual int32_t RegisterAsync(const std::string& name,
                             const std::string& url,
-                            const CbReturnCode& cb,
-                            int64_t instance_id = 0);
+                            const CbReturnCode& cb);
 
     /// @brief 异步注册到名字服务
     /// @param name 名字(带完整路径)
@@ -102,14 +100,13 @@ public:
     /// @return 0成功，其他失败，错误码意义见@ref ZookeeperErrorCode
     virtual int32_t RegisterAsync(const std::string& name,
                           const std::vector<std::string>& urls,
-                          const CbReturnCode& cb,
-                          int64_t instance_id = 0);
+                          const CbReturnCode& cb);
 
     /// @brief 注销名字同步接口
     /// @param name 名字(带完整路径)
     /// @return 0成功，其他失败，错误码意义见@ref ZookeeperErrorCode
     /// @note 对于同步接口调用如果不设置协程调度器或不在协程内调用会一直阻塞等待
-    virtual int32_t UnRegister(const std::string& name, int64_t instance_id = 0);
+    virtual int32_t UnRegister(const std::string& name);
 
     /// @brief 注销名字异步接口
     /// @param name 名字(带完整路径)
@@ -117,8 +114,7 @@ public:
     /// @return 0成功，其他失败，错误码意义见@ref ZookeeperErrorCode
     /// @note 对于同步接口调用如果不设置协程调度器或不在协程内调用会一直阻塞等待
     virtual int32_t UnRegisterAsync(const std::string& name,
-                                    const CbReturnCode& cb,
-                                    int64_t instance_id = 0);
+                                    const CbReturnCode& cb);
 
     /// @brief 同步获取名字的地址列表
     /// @param name 名字(带完整路径，支持*通配符号，格式"/a/b"或"/a*/*b/c*d/*")

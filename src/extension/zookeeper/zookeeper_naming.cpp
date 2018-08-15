@@ -212,14 +212,14 @@ int32_t ZookeeperNaming::SetCache(bool use_cache, int32_t refresh_time_ms, int32
     return 0;
 }
 
-int32_t ZookeeperNaming::Register(const std::string& name, const std::string& url, int64_t instance_id)
+int32_t ZookeeperNaming::Register(const std::string& name, const std::string& url)
 {
     std::vector<std::string> urls;
     urls.push_back(url);
-    return Register(name, urls, instance_id);
+    return Register(name, urls);
 }
 
-int32_t ZookeeperNaming::Register(const std::string& name, const std::vector<std::string>& urls, int64_t instance_id)
+int32_t ZookeeperNaming::Register(const std::string& name, const std::vector<std::string>& urls)
 {
     SyncWaitAdaptor *sync_adaptor = NULL;
     CbReturnCode cb;
@@ -236,7 +236,7 @@ int32_t ZookeeperNaming::Register(const std::string& name, const std::vector<std
         sync_adaptor = block_adaptor;
     }
 
-    int32_t ret = RegisterAsync(name, urls, cb, instance_id);
+    int32_t ret = RegisterAsync(name, urls, cb);
     if (0 == ret) {
         sync_adaptor->WaitRsp();
         ret = sync_adaptor->_rc;
@@ -247,17 +247,16 @@ int32_t ZookeeperNaming::Register(const std::string& name, const std::vector<std
 
 int32_t ZookeeperNaming::RegisterAsync(const std::string& name,
                             const std::string& url,
-                            const CbReturnCode& cb,
-                            int64_t instance_id)
+                            const CbReturnCode& cb)
 {
     std::vector<std::string> urls;
     urls.push_back(url);
-    return RegisterAsync(name, urls, cb, instance_id);
+    return RegisterAsync(name, urls, cb);
 }
 
 int32_t ZookeeperNaming::RegisterAsync(const std::string& name,
     const std::vector<std::string>& urls,
-    const CbReturnCode& cb, int64_t instance_id)
+    const CbReturnCode& cb)
 {
     if (name.empty() || urls.empty() || !cb) {
         return kZK_BADARGUMENTS;
@@ -292,7 +291,7 @@ int32_t ZookeeperNaming::RegisterAsync(const std::string& name,
     return op_handle->Start(real_name, urls, pwd, cb);
 }
 
-int32_t ZookeeperNaming::UnRegister(const std::string& name, int64_t instance_id)
+int32_t ZookeeperNaming::UnRegister(const std::string& name)
 {
     SyncWaitAdaptor *sync_adaptor = NULL;
     CbReturnCode cb = NULL;
@@ -308,7 +307,7 @@ int32_t ZookeeperNaming::UnRegister(const std::string& name, int64_t instance_id
         cb = cxx::bind(&BlockWaitAdaptor::OnCodeRsp, block_adaptor, _1);
         sync_adaptor = block_adaptor;
     }
-    int32_t ret = UnRegisterAsync(name, cb, instance_id);
+    int32_t ret = UnRegisterAsync(name, cb);
     if (0 == ret) {
         sync_adaptor->WaitRsp();
         ret = sync_adaptor->_rc;
@@ -317,7 +316,7 @@ int32_t ZookeeperNaming::UnRegister(const std::string& name, int64_t instance_id
     return ret;
 }
 
-int32_t ZookeeperNaming::UnRegisterAsync(const std::string& name, const CbReturnCode& cb, int64_t instance_id)
+int32_t ZookeeperNaming::UnRegisterAsync(const std::string& name, const CbReturnCode& cb)
 {
     if (name.empty() || !cb) {
         return kZK_BADARGUMENTS;

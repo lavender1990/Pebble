@@ -43,9 +43,9 @@ int main(int argc, char** argv) {
 	ASSERT_EQ(0, ret);
 
 	if (argc > 1)
-		ret = zk_naming->Register("/10000/abc", argv[1], 100);
+		ret = zk_naming->Register("/10000/abc", argv[1]);
 	else
-		ret = zk_naming->Register("/10000/abc", "tcp://127.0.0.1:8000", 100);
+		ret = zk_naming->Register("/10000/abc", "tcp://127.0.0.1:8000");
 	ASSERT_EQ(0, ret);
 
 	server.Serve();
