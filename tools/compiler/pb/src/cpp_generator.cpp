@@ -267,6 +267,7 @@ void PrintHeaderServerMethod(
         printer->Print("\n");
     }
     if (method->NoStreaming()) {
+        printer->Print(*vars, "/* 如果是提供广播服务，则无需调用rsp (TODO:后续考虑直接优化语法) */\n");
         printer->Print(*vars,
             "virtual void $Method$(const $Request$& request,"
             " cxx::function<void(int32_t ret_code, const $Response$& response)>& rsp) = 0;\n");
