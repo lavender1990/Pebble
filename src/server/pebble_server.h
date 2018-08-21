@@ -117,6 +117,7 @@ typedef enum {
 typedef enum {
 	kROUTER_DEFAULT = 0,
     kROUTER_TBUSPP = 1,
+    kROUTER_ZOOKEEPER = 2,
     kROUTER_BUTT
 } RouterType;
 

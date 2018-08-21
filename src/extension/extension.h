@@ -63,6 +63,12 @@
             PLOG_ERROR("SetNamingFactory failed, ret_code: %d", ret); \
             break; \
         } \
+        cxx::shared_ptr<pebble::RouterFactory> router_factory(new pebble::ZookeeperRouterFactory()); \
+        (ret) = pebble::SetRouterFactory(pebble::kROUTER_ZOOKEEPER, router_factory); \
+        if ((ret) != 0) { \
+            PLOG_ERROR("SetRouterFactory failed, ret_code: %d", ret); \
+            break; \
+        } \
     } while (0); \
     ret;})
 
