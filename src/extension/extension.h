@@ -20,6 +20,7 @@
 //#include "extension/tbuspp/tbuspp_naming.h"
 //#include "extension/tbuspp/tbuspp_router.h"
 #include "extension/zookeeper/zookeeper_naming.h"
+#include "extension/zookeeper/zookeeper_router.h"
 #include "common/log.h"
 #include "common/platform.h"
 

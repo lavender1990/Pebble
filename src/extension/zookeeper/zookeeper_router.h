@@ -49,7 +49,7 @@ protected:
     std::map<uint32_t, int64_t>    m_id_2_handle;
 };
 
-class ZookeeperRouterFactory {
+class ZookeeperRouterFactory : public RouterFactory {
 public:
     ZookeeperRouterFactory() {}
     virtual ~ZookeeperRouterFactory() {}
