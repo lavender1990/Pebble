@@ -54,7 +54,7 @@ public:
     ZookeeperRouterFactory() {}
     virtual ~ZookeeperRouterFactory() {}
     virtual Router* GetRouter(const std::string& name_path) {
-        return new Router(name_path);
+        return new ZookeeperRouter(name_path);
     }
 };
 
