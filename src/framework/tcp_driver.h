@@ -80,6 +80,7 @@ private:
 	KVCache* m_send_cache;
 	KVCache* m_recv_cache;
 	char* m_common_buff;
+	int m_proc_num;
 
 	cxx::unordered_map<int64_t, cxx::shared_ptr<Listener> > m_listeners;
 	cxx::unordered_map<int64_t, cxx::shared_ptr<Connection> > m_connections;

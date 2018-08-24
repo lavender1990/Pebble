@@ -473,6 +473,7 @@ TcpDriver::TcpDriver() {
 	m_loop 			= NULL;
 	m_recv_cache	= NULL;
 	m_common_buff	= NULL;
+	m_proc_num      = 0;
 }
 
 TcpDriver::~TcpDriver() {
@@ -602,6 +603,7 @@ int32_t TcpDriver::SendRaw(int64_t handle, uint32_t msg_frag_num, const uint8_t*
 	if (m_connections.end() == it) {
 		return kMESSAGE_INVAILD_HANDLE;
 	}
+	m_proc_num++;
 
 	return it->second->SendV(msg_frag_num, msg_frag, msg_frag_len);
 }
@@ -613,8 +615,8 @@ int32_t TcpDriver::Close(int64_t handle) {
 }
 
 int32_t TcpDriver::Update() {
-	int cnt = ev_run(m_loop, EVRUN_NOWAIT);
-	return cnt;
+	ev_run(m_loop, EVRUN_NOWAIT);
+	return m_proc_num;
 }
 
 int32_t TcpDriver::ParseHead(const uint8_t* head, uint32_t head_len, uint32_t* data_len) {
@@ -691,6 +693,8 @@ int32_t TcpDriver::OnMessage(Connection* connection, const uint8_t* msg, uint32_
 			m_cbs._on_message(buff, data_len, &msg_info);
 			buff += data_len;
 			buff_len -= data_len;
+
+			m_proc_num++;
 		}
 		proc_len += head_len + data_len;
 	} while (true); // TODO: avoid other connection hunger
