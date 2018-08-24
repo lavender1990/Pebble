@@ -300,7 +300,7 @@ public:
     /// @brief 获取广播管理实例
     /// @return 非NULL 成功
     /// @return NULL 失败
-    BroadcastMgr* GetBroadcastMgr();
+    BroadcastMgr* GetBroadcastMgr(ProtocolType rpc_type);
 
     /// @brief 创建一个协程，并决定是否立即执行
     /// @param routine 协程执行入口函数

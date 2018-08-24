@@ -1006,7 +1006,7 @@ Stat* PebbleServer::GetStat() {
     return NULL;
 }
 
-BroadcastMgr* PebbleServer::GetBroadcastMgr() {
+BroadcastMgr* PebbleServer::GetBroadcastMgr(ProtocolType rpc_type) {
     if (m_broadcast_mgr) {
         return m_broadcast_mgr;
     }
@@ -1033,7 +1033,10 @@ BroadcastMgr* PebbleServer::GetBroadcastMgr() {
     }
 
     // server间转发的广播消息使用binary编码
-    rpc = GetPebbleRpc(kPEBBLE_RPC_BINARY);
+    rpc = GetPebbleRpc(rpc_type);
+    if (rpc == NULL) {
+        goto error;
+    }
     ret = Attach(handle, rpc);
     if (ret != 0) {
         goto error;
