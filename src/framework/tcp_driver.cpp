@@ -616,7 +616,9 @@ int32_t TcpDriver::Close(int64_t handle) {
 
 int32_t TcpDriver::Update() {
 	ev_run(m_loop, EVRUN_NOWAIT);
-	return m_proc_num;
+	int num = m_proc_num;
+	m_proc_num = 0;
+	return num;
 }
 
 int32_t TcpDriver::ParseHead(const uint8_t* head, uint32_t head_len, uint32_t* data_len) {
