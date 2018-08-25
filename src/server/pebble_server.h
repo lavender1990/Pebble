@@ -239,7 +239,7 @@ public:
     /// @return RPC_CLIENT对象，为NULL时创建失败，新创建的对象需要用户释放
     template<class RPC_CLIENT>
     RPC_CLIENT* NewRpcClientByName(const std::string& service_name,
-        ProtocolType protocol_type = kPEBBLE_RPC_BINARY, Router** router = NULL);
+        ProtocolType protocol_type = kPEBBLE_RPC_BINARY, RouterType router_type = kROUTER_DEFAULT, Router** router = NULL);
 
     /// @brief 创建一个指定类型的RPC stub实例，只创建不回收，对象需要用户释放
     /// @param channel_name 广播频道的名字
@@ -449,13 +449,13 @@ RPC_CLIENT* PebbleServer::NewRpcClientByAddress(const std::string& service_addre
 
 template<class RPC_CLIENT>
 RPC_CLIENT* PebbleServer::NewRpcClientByName(const std::string& service_name,
-    ProtocolType protocol_type, Router** router) {
+    ProtocolType protocol_type, RouterType router_type, Router** router) {
     PebbleRpc* pebble_rpc = GetPebbleRpc(protocol_type);
     if (pebble_rpc == NULL) {
         PLOG_ERROR("GetPebbleRpc failed, protocol_type: %d", protocol_type);
         return NULL;
     }
-    Router* new_router = GetRouter(service_name);
+    Router* new_router = GetRouter(service_name, router_type);
     if (new_router == NULL) {
         PLOG_ERROR("GetRouter failed");
         return NULL;
