@@ -58,7 +58,6 @@ cc_library(
         'gdata_api.cpp',
         'message.cpp',
         'naming.cpp',
-        'net_message.cpp',
         'options.cpp',
         'pebble_rpc.cpp',
         'processor.cpp',
